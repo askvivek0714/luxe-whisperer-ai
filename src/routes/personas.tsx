@@ -141,25 +141,37 @@ function PersonaStudio() {
                     </li>
                   ))}
                 </ul>
-                <button className="mt-6 text-[10px] uppercase tracking-widest text-primary">
-                  + Add guardrail
-                </button>
+                {canEdit && (
+                  <button className="mt-6 text-[10px] uppercase tracking-widest text-primary">
+                    + Add guardrail
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="mt-14 flex items-center justify-between pt-8 border-t border-border">
               <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                Changes recalibrate recommendations for {active.clientCount} clients
+                {canEdit
+                  ? `Changes recalibrate recommendations for ${active.clientCount} clients`
+                  : `Active for ${active.clientCount} clients · Last published 12 May by Marketing`}
               </p>
-              <div className="flex gap-3">
-                <button className="text-[10px] uppercase tracking-widest px-5 py-3 border border-border hover:bg-accent/60 rounded-sm">
-                  Revert
-                </button>
-                <button className="text-[10px] uppercase tracking-widest px-5 py-3 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-sm transition-colors">
-                  Save & Recalibrate
-                </button>
-              </div>
+              {canEdit && (
+                <div className="flex gap-3">
+                  <button className="text-[10px] uppercase tracking-widest px-5 py-3 border border-border hover:bg-accent/60 rounded-sm">
+                    Revert
+                  </button>
+                  <button className="text-[10px] uppercase tracking-widest px-5 py-3 border border-border hover:bg-accent/60 rounded-sm">
+                    Save Draft
+                  </button>
+                  {canPublish && (
+                    <button className="text-[10px] uppercase tracking-widest px-5 py-3 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-sm transition-colors">
+                      Publish & Recalibrate
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+
           </div>
         </section>
       </div>
