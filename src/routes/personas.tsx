@@ -117,13 +117,15 @@ function PersonaStudio() {
                         min={0}
                         max={100}
                         value={w.value}
+                        disabled={!canEdit}
                         onChange={(e) => setWeight(w.label, Number(e.target.value))}
-                        className="w-full accent-primary cursor-pointer"
+                        className="w-full accent-primary cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                       />
                     </div>
                   ))}
                 </div>
               </div>
+
 
               <div>
                 <h3 className="text-xs uppercase tracking-widest font-semibold mb-6">
