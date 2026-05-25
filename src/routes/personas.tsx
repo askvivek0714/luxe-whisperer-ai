@@ -68,9 +68,12 @@ function PersonaStudio() {
               );
             })}
           </div>
-          <button className="w-full mt-6 text-[10px] uppercase tracking-widest border border-dashed border-border py-3 hover:bg-accent/40">
-            + New Persona
-          </button>
+          {canEdit && (
+            <button className="w-full mt-6 text-[10px] uppercase tracking-widest border border-dashed border-border py-3 hover:bg-accent/40">
+              + New Persona
+            </button>
+          )}
+
         </aside>
 
         <section className="flex-1 overflow-y-auto p-10 animate-slide-up">
