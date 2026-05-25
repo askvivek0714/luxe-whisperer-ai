@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock, Plus, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { listPersonas, updatePersona, createPersona, deletePersona, type PersonaRow } from "@/lib/fns/personas";
 import { useRole, can } from "@/lib/rbac";
@@ -41,6 +42,7 @@ function PersonaStudio() {
   const [newPersonaName, setNewPersonaName] = useState("");
   const [newPersonaDesc, setNewPersonaDesc] = useState("");
   const [newGuardrail, setNewGuardrail] = useState("");
+  const [createSubmitted, setCreateSubmitted] = useState(false);
 
   const active = personas.find((p) => p.id === activeId);
   const currentWeights = active ? (weights[active.id] ?? active.weights) : [];
@@ -96,6 +98,9 @@ function PersonaStudio() {
       setPersonas(refreshed);
       setWeights(Object.fromEntries(refreshed.map((p) => [p.id, p.weights])));
       setGuardrails(Object.fromEntries(refreshed.map((p) => [p.id, p.guardrails])));
+      toast.success(publish ? "Persona published" : "Persona saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save persona");
     } finally {
       setSaving(false);
     }
@@ -104,40 +109,53 @@ function PersonaStudio() {
 
   const handleDelete = async () => {
     if (!active) return;
-    await deletePersona({ data: { id: active.id } });
-    await router.invalidate();
-    const refreshed = await listPersonas();
-    setPersonas(refreshed);
-    setActiveId(refreshed[0]?.id ?? "");
-    setWeights(Object.fromEntries(refreshed.map((p) => [p.id, p.weights])));
-    setGuardrails(Object.fromEntries(refreshed.map((p) => [p.id, p.guardrails])));
-    setConfirmDelete(false);
+    try {
+      await deletePersona({ data: { id: active.id } });
+      await router.invalidate();
+      const refreshed = await listPersonas();
+      setPersonas(refreshed);
+      setActiveId(refreshed[0]?.id ?? "");
+      setWeights(Object.fromEntries(refreshed.map((p) => [p.id, p.weights])));
+      setGuardrails(Object.fromEntries(refreshed.map((p) => [p.id, p.guardrails])));
+      setConfirmDelete(false);
+      toast.success("Persona deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete persona");
+      setConfirmDelete(false);
+    }
   };
 
   const handleCreate = async () => {
+    setCreateSubmitted(true);
     if (!newPersonaName.trim()) return;
-    const { id } = await createPersona({
-      data: {
-        name: newPersonaName.trim(),
-        description: newPersonaDesc.trim(),
-        weights: [
-          { label: "Visual Minimalism", value: 50 },
-          { label: "Brand Salience", value: 50 },
-          { label: "Heritage & Craft", value: 50 },
-          { label: "Newness Appetite", value: 50 },
-        ],
-        guardrails: [],
-      },
-    });
-    await router.invalidate();
-    const refreshed = await listPersonas();
-    setPersonas(refreshed);
-    setWeights(Object.fromEntries(refreshed.map((p) => [p.id, p.weights])));
-    setGuardrails(Object.fromEntries(refreshed.map((p) => [p.id, p.guardrails])));
-    setActiveId(id);
-    setShowNewPersona(false);
-    setNewPersonaName("");
-    setNewPersonaDesc("");
+    try {
+      const { id } = await createPersona({
+        data: {
+          name: newPersonaName.trim(),
+          description: newPersonaDesc.trim(),
+          weights: [
+            { label: "Visual Minimalism", value: 50 },
+            { label: "Brand Salience", value: 50 },
+            { label: "Heritage & Craft", value: 50 },
+            { label: "Newness Appetite", value: 50 },
+          ],
+          guardrails: [],
+        },
+      });
+      await router.invalidate();
+      const refreshed = await listPersonas();
+      setPersonas(refreshed);
+      setWeights(Object.fromEntries(refreshed.map((p) => [p.id, p.weights])));
+      setGuardrails(Object.fromEntries(refreshed.map((p) => [p.id, p.guardrails])));
+      setActiveId(id);
+      setShowNewPersona(false);
+      setNewPersonaName("");
+      setNewPersonaDesc("");
+      setCreateSubmitted(false);
+      toast.success("Persona created");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create persona");
+    }
   };
 
   return (
@@ -353,15 +371,23 @@ function PersonaStudio() {
             <h3 className="font-serif text-xl italic">New Persona</h3>
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground">
-                Name
+                Name <span className="text-destructive">*</span>
               </label>
               <input
                 autoFocus
                 value={newPersonaName}
                 onChange={(e) => setNewPersonaName(e.target.value)}
-                className="w-full bg-transparent border border-border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary rounded-sm"
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                className={`w-full bg-transparent border px-3 py-2 text-sm focus:outline-none focus:ring-1 rounded-sm ${
+                  createSubmitted && !newPersonaName.trim()
+                    ? "border-destructive focus:ring-destructive"
+                    : "border-border focus:ring-primary"
+                }`}
                 placeholder="e.g. Emerging Collector"
               />
+              {createSubmitted && !newPersonaName.trim() && (
+                <p className="text-xs text-destructive">Name is required</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground">
@@ -384,8 +410,7 @@ function PersonaStudio() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={!newPersonaName.trim()}
-                className="text-[10px] uppercase tracking-widest px-5 py-3 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-sm transition-colors disabled:opacity-50"
+                className="text-[10px] uppercase tracking-widest px-5 py-3 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-sm transition-colors"
               >
                 Create Persona
               </button>

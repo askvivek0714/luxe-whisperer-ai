@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -44,9 +45,15 @@ export function ClientForm({ open, onClose, client }: Props) {
     (client?.preferences ?? []).join(", "),
   );
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const nameError = submitted && !name.trim();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSubmitted(true);
+    if (!name.trim()) return;
+
     setSaving(true);
     const preferences = preferencesRaw
       .split(",")
@@ -84,7 +91,10 @@ export function ClientForm({ open, onClose, client }: Props) {
         });
       }
       await router.invalidate();
+      toast.success(isEdit ? "Client updated" : "Client created");
       onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save client");
     } finally {
       setSaving(false);
     }
@@ -101,8 +111,18 @@ export function ClientForm({ open, onClose, client }: Props) {
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1.5">
-              <Label>Full Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+              <Label>
+                Full Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={nameError ? "border-destructive focus-visible:ring-destructive" : ""}
+                aria-invalid={nameError}
+              />
+              {nameError && (
+                <p className="text-xs text-destructive">Full Name is required</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Tier</Label>
@@ -183,7 +203,7 @@ export function ClientForm({ open, onClose, client }: Props) {
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving || !name}>
+            <Button type="submit" disabled={saving}>
               {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Client"}
             </Button>
           </DialogFooter>

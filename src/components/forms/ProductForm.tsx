@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -31,9 +32,16 @@ export function ProductForm({ open, onClose, product }: Props) {
   const [floorStock, setFloorStock] = useState(String(product?.floor_stock ?? 0));
   const [vaultStock, setVaultStock] = useState(String(product?.vault_stock ?? 0));
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const nameError = submitted && !name.trim();
+  const skuError = submitted && !sku.trim();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSubmitted(true);
+    if (!name.trim() || !sku.trim()) return;
+
     setSaving(true);
     try {
       if (isEdit) {
@@ -62,7 +70,10 @@ export function ProductForm({ open, onClose, product }: Props) {
         });
       }
       await router.invalidate();
+      toast.success(isEdit ? "Product updated" : "Product created");
       onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save product");
     } finally {
       setSaving(false);
     }
@@ -79,12 +90,32 @@ export function ProductForm({ open, onClose, product }: Props) {
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1.5">
-              <Label>Product Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+              <Label>
+                Product Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={nameError ? "border-destructive focus-visible:ring-destructive" : ""}
+                aria-invalid={nameError}
+              />
+              {nameError && (
+                <p className="text-xs text-destructive">Product Name is required</p>
+              )}
             </div>
             <div className="space-y-1.5">
-              <Label>SKU</Label>
-              <Input value={sku} onChange={(e) => setSku(e.target.value)} required />
+              <Label>
+                SKU <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                className={skuError ? "border-destructive focus-visible:ring-destructive" : ""}
+                aria-invalid={skuError}
+              />
+              {skuError && (
+                <p className="text-xs text-destructive">SKU is required</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Category</Label>
@@ -127,7 +158,7 @@ export function ProductForm({ open, onClose, product }: Props) {
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               Cancel
             </Button>
-            <Button type="submit" disabled={saving || !name || !sku}>
+            <Button type="submit" disabled={saving}>
               {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
             </Button>
           </DialogFooter>
