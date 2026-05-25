@@ -78,13 +78,27 @@ function PersonaStudio() {
 
         <section className="flex-1 overflow-y-auto p-10 animate-slide-up">
           <div className="max-w-3xl">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
-              Editing
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+              {canEdit ? "Editing" : (
+                <>
+                  <Lock className="size-3" strokeWidth={1.5} />
+                  Read-only · Governed by Marketing
+                </>
+              )}
             </p>
             <h2 className="font-serif text-4xl italic leading-tight">{active.name}</h2>
             <p className="text-muted-foreground mt-3 max-w-2xl leading-relaxed">
               {active.description}
             </p>
+            {!canEdit && (
+              <div className="mt-6 p-4 border border-border bg-card/50 rounded-sm text-xs text-muted-foreground leading-relaxed">
+                Personas are centrally defined by the Marketing team. As a store
+                associate, you can review the persona definition and apply its
+                recommendations during client interactions. To request a change,
+                contact <span className="text-foreground">Client Strategy · HQ</span>.
+              </div>
+            )}
+
 
             <div className="mt-12 grid md:grid-cols-2 gap-12">
               <div>
