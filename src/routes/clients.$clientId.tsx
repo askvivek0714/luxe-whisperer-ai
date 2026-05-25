@@ -34,7 +34,8 @@ export const Route = createFileRoute("/clients/$clientId")({
 });
 
 function ClientDetail() {
-  const { client } = Route.useLoaderData();
+  const { clientId } = Route.useParams();
+  const client = clients.find((c) => c.id === clientId)!;
   const recs = recommendationsByClient[client.id] ?? [];
   const persona = personas.find((p) => p.id === client.personaId);
   const [note, setNote] = useState(
