@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 export type Role = "associate" | "marketing" | "admin";
 
 export type Permission =
+  | "today.view"
   | "persona.view"
   | "persona.create"
   | "persona.edit"
@@ -14,7 +15,7 @@ export type Permission =
   | "audit.view";
 
 const matrix: Record<Role, Permission[]> = {
-  associate: ["persona.view", "client.view", "recommendation.view"],
+  associate: ["today.view", "persona.view", "client.view", "recommendation.view"],
   marketing: [
     "persona.view",
     "persona.create",

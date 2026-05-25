@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createClient, updateClient, type ClientRow } from "@/lib/fns/clients";
+import { useRole } from "@/lib/rbac";
+import { STORES, ASSOCIATE_STORE } from "@/lib/stores";
 
 type Props = {
   open: boolean;
@@ -31,10 +33,13 @@ const STATUSES: ClientRow["status"][] = ["arrived", "expected", "browsing"];
 
 export function ClientForm({ open, onClose, client }: Props) {
   const router = useRouter();
+  const { role } = useRole();
   const isEdit = !!client;
+  const isAssociate = role === "associate";
 
   const [name, setName] = useState(client?.name ?? "");
   const [tier, setTier] = useState(client?.tier ?? TIERS[1]);
+  const [clientStore, setClientStore] = useState(client?.store ?? ASSOCIATE_STORE);
   const [lifetimeValue, setLifetimeValue] = useState(client?.lifetime_value ?? "");
   const [persona, setPersona] = useState(client?.persona ?? "");
   const [status, setStatus] = useState<ClientRow["status"]>(client?.status ?? "expected");
@@ -66,6 +71,7 @@ export function ClientForm({ open, onClose, client }: Props) {
             id: client.id,
             name,
             tier,
+            store: isAssociate ? ASSOCIATE_STORE : clientStore,
             lifetime_value: lifetimeValue,
             persona,
             status,
@@ -80,6 +86,7 @@ export function ClientForm({ open, onClose, client }: Props) {
           data: {
             name,
             tier,
+            store: isAssociate ? ASSOCIATE_STORE : clientStore,
             lifetime_value: lifetimeValue,
             persona,
             status,
@@ -153,6 +160,25 @@ export function ClientForm({ open, onClose, client }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Store</Label>
+              {isAssociate ? (
+                <Input value={ASSOCIATE_STORE} disabled className="opacity-60" />
+              ) : (
+                <Select value={clientStore} onValueChange={setClientStore}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STORES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Lifetime Value</Label>

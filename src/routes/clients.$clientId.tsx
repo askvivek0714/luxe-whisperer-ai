@@ -12,9 +12,9 @@ import { ArrowLeft, Send, Sparkles, ChevronRight, Pencil, Trash2 } from "lucide-
 export const Route = createFileRoute("/clients/$clientId")({
   component: ClientDetail,
   notFoundComponent: () => (
-    <AppShell title="Client not found">
+    <AppShell title="Customer not found">
       <div className="p-12 text-center text-muted-foreground">
-        <p>That client profile could not be located.</p>
+        <p>That customer profile could not be located.</p>
         <Link to="/clients" className="text-primary mt-4 inline-block">
           ← Return to directory
         </Link>
@@ -52,7 +52,7 @@ function ClientDetail() {
   }
 
   return (
-    <AppShell title="Client 360">
+    <AppShell title="Customer 360">
       <div className="flex h-full overflow-hidden">
         <aside className="w-80 border-r border-border bg-card overflow-y-auto p-8 animate-pulse-in shrink-0">
           <Link

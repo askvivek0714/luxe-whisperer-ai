@@ -19,8 +19,8 @@ const navItems: {
   icon: typeof CalendarClock;
   required: Permission;
 }[] = [
-  { to: "/", label: "Today", icon: CalendarClock, required: "client.view" },
-  { to: "/clients", label: "Clients", icon: Users, required: "client.view" },
+  { to: "/", label: "Today", icon: CalendarClock, required: "today.view" },
+  { to: "/clients", label: "Customers", icon: Users, required: "client.view" },
   {
     to: "/recommendations",
     label: "Recommendations",
@@ -152,9 +152,11 @@ export function AppShell({
             <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-1 border border-border rounded-sm">
               {role}
             </span>
-            <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-tighter">
-              Bond St. Flagship · 14:02 GMT
-            </div>
+            {role === "associate" && (
+              <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-tighter">
+                Bond St. Flagship · 14:02 GMT
+              </div>
+            )}
           </div>
         </header>
         <ArrivalAlert />

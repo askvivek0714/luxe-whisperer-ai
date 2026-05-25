@@ -6,6 +6,7 @@ export type ClientRow = {
   portrait: string;
   persona: string;
   persona_id: string | null;
+  store: string;
   tier: string;
   lifetime_value: string;
   last_visit_days: number;
@@ -23,6 +24,7 @@ export type ClientInput = {
   portrait?: string;
   persona?: string;
   persona_id?: string;
+  store?: string;
   tier?: string;
   lifetime_value?: string;
   last_visit_days?: number;
@@ -67,6 +69,7 @@ export async function createClient({ data }: { data: ClientInput }): Promise<{ i
     portrait: data.portrait ?? "",
     persona: data.persona ?? "",
     persona_id: data.persona_id ?? null,
+    store: data.store ?? "Bond St. Flagship",
     tier: data.tier ?? "",
     lifetime_value: data.lifetime_value ?? "",
     last_visit_days: data.last_visit_days ?? 0,
@@ -96,6 +99,7 @@ export async function updateClient({
     portrait: data.portrait ?? existing.portrait,
     persona: data.persona ?? existing.persona,
     persona_id: data.persona_id ?? null,
+    store: data.store ?? existing.store ?? "Bond St. Flagship",
     tier: data.tier ?? existing.tier,
     lifetime_value: data.lifetime_value ?? existing.lifetime_value,
     last_visit_days: data.last_visit_days ?? existing.last_visit_days,
