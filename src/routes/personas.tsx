@@ -21,6 +21,10 @@ export const Route = createFileRoute("/personas")({
 });
 
 function PersonaStudio() {
+  const { role } = useRole();
+  const canEdit = can(role, "persona.edit");
+  const canPublish = can(role, "persona.publish");
+
   const [activeId, setActiveId] = useState(personas[0].id);
   const active = personas.find((p) => p.id === activeId)!;
   const [weights, setWeights] = useState<Record<string, Persona["weights"]>>(
@@ -28,6 +32,7 @@ function PersonaStudio() {
   );
 
   const setWeight = (label: string, value: number) => {
+    if (!canEdit) return;
     setWeights((w) => ({
       ...w,
       [active.id]: w[active.id].map((x) => (x.label === label ? { ...x, value } : x)),
@@ -37,7 +42,8 @@ function PersonaStudio() {
   const current = weights[active.id];
 
   return (
-    <AppShell title="Persona Studio">
+    <AppShell title={canEdit ? "Persona Studio" : "Persona Library"}>
+
       <div className="flex h-full overflow-hidden">
         <aside className="w-72 border-r border-border bg-card overflow-y-auto p-6 shrink-0">
           <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-4">
