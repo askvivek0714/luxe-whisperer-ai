@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { Lock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { personas, type Persona } from "@/lib/clienteling-data";
+import { useRole, can } from "@/lib/rbac";
+
 
 export const Route = createFileRoute("/personas")({
   component: PersonaStudio,
