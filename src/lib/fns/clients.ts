@@ -1,13 +1,11 @@
-"use server";
-import { createServerFn } from "@tanstack/react-start";
-import { getDb } from "@/lib/db";
+import { store, ensureSeeded } from "@/lib/storage";
 
 export type ClientRow = {
   id: string;
   name: string;
   portrait: string;
   persona: string;
-  persona_id: string;
+  persona_id: string | null;
   tier: string;
   lifetime_value: string;
   last_visit_days: number;
@@ -35,111 +33,87 @@ export type ClientInput = {
   preferences?: string[];
 };
 
-function hydrate(row: Omit<ClientRow, "preferences" | "acquisitions">): ClientRow {
-  const db = getDb();
-  const preferences = (
-    db.prepare("SELECT preference FROM client_preferences WHERE client_id = ?").all(row.id) as {
-      preference: string;
-    }[]
-  ).map((r) => r.preference);
-  const acquisitions = db
-    .prepare("SELECT name, season, price, image FROM client_acquisitions WHERE client_id = ?")
-    .all(row.id) as ClientRow["acquisitions"];
-  return { ...row, preferences, acquisitions };
+export async function listClients(): Promise<ClientRow[]> {
+  ensureSeeded();
+  return store.clients
+    .list()
+    .sort((a, b) =>
+      a.appointment_time && b.appointment_time
+        ? a.appointment_time.localeCompare(b.appointment_time)
+        : a.appointment_time
+          ? -1
+          : 1,
+    );
 }
 
-export const listClients = createServerFn({ method: "GET" }).handler(async () => {
-  const db = getDb();
-  const rows = db
-    .prepare("SELECT * FROM clients ORDER BY appointment_time ASC NULLS LAST")
-    .all() as Omit<ClientRow, "preferences" | "acquisitions">[];
-  return rows.map(hydrate);
-});
+export async function getClient({ data }: { data: { id: string } }): Promise<ClientRow | null> {
+  ensureSeeded();
+  return store.clients.get(data.id);
+}
 
-export const getClient = createServerFn({ method: "GET" }).handler(
-  async ({ data }: { data: { id: string } }) => {
-    const db = getDb();
-    const row = db.prepare("SELECT * FROM clients WHERE id = ?").get(data.id) as
-      | Omit<ClientRow, "preferences" | "acquisitions">
-      | undefined;
-    if (!row) return null;
-    return hydrate(row);
-  },
-);
+export async function createClient({ data }: { data: ClientInput }): Promise<{ id: string }> {
+  ensureSeeded();
+  const id =
+    data.id ??
+    data.name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+  const clients = store.clients.list();
+  if (clients.find((c) => c.id === id)) throw new Error("UNIQUE constraint failed: clients.id");
+  const newClient: ClientRow = {
+    id,
+    name: data.name,
+    portrait: data.portrait ?? "",
+    persona: data.persona ?? "",
+    persona_id: data.persona_id ?? null,
+    tier: data.tier ?? "",
+    lifetime_value: data.lifetime_value ?? "",
+    last_visit_days: data.last_visit_days ?? 0,
+    appointment_time: data.appointment_time ?? null,
+    status: data.status ?? "expected",
+    garment_size: data.garment_size ?? "",
+    shoe_size: data.shoe_size ?? "",
+    preferences: data.preferences ?? [],
+    acquisitions: [],
+  };
+  store.clients.save([...clients, newClient]);
+  return { id };
+}
 
-export const createClient = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: ClientInput }) => {
-    const db = getDb();
-    const id =
-      data.id ??
-      data.name
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, "");
-    db.prepare(`
-      INSERT INTO clients (id, name, portrait, persona, persona_id, tier, lifetime_value,
-        last_visit_days, appointment_time, status, garment_size, shoe_size)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      data.name,
-      data.portrait ?? "",
-      data.persona ?? "",
-      data.persona_id ?? null,
-      data.tier ?? "",
-      data.lifetime_value ?? "",
-      data.last_visit_days ?? 0,
-      data.appointment_time ?? null,
-      data.status ?? "expected",
-      data.garment_size ?? "",
-      data.shoe_size ?? "",
-    );
-    if (data.preferences?.length) {
-      const stmt = db.prepare(
-        "INSERT INTO client_preferences (client_id, preference) VALUES (?, ?)",
-      );
-      for (const p of data.preferences) stmt.run(id, p);
-    }
-    return { id };
-  },
-);
+export async function updateClient({
+  data,
+}: {
+  data: ClientInput & { id: string };
+}): Promise<{ ok: true }> {
+  ensureSeeded();
+  const clients = store.clients.list();
+  const existing = clients.find((c) => c.id === data.id);
+  if (!existing) throw new Error("Client not found");
+  const updated: ClientRow = {
+    ...existing,
+    name: data.name,
+    portrait: data.portrait ?? existing.portrait,
+    persona: data.persona ?? existing.persona,
+    persona_id: data.persona_id ?? null,
+    tier: data.tier ?? existing.tier,
+    lifetime_value: data.lifetime_value ?? existing.lifetime_value,
+    last_visit_days: data.last_visit_days ?? existing.last_visit_days,
+    appointment_time: data.appointment_time ?? null,
+    status: data.status ?? existing.status,
+    garment_size: data.garment_size ?? existing.garment_size,
+    shoe_size: data.shoe_size ?? existing.shoe_size,
+    preferences: data.preferences ?? existing.preferences,
+  };
+  store.clients.save(clients.map((c) => (c.id === data.id ? updated : c)));
+  return { ok: true };
+}
 
-export const updateClient = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: ClientInput & { id: string } }) => {
-    const db = getDb();
-    db.prepare(`
-      UPDATE clients SET name=?, portrait=?, persona=?, persona_id=?, tier=?, lifetime_value=?,
-        last_visit_days=?, appointment_time=?, status=?, garment_size=?, shoe_size=?
-      WHERE id=?
-    `).run(
-      data.name,
-      data.portrait ?? "",
-      data.persona ?? "",
-      data.persona_id ?? null,
-      data.tier ?? "",
-      data.lifetime_value ?? "",
-      data.last_visit_days ?? 0,
-      data.appointment_time ?? null,
-      data.status ?? "expected",
-      data.garment_size ?? "",
-      data.shoe_size ?? "",
-      data.id,
-    );
-    if (data.preferences !== undefined) {
-      db.prepare("DELETE FROM client_preferences WHERE client_id = ?").run(data.id);
-      const stmt = db.prepare(
-        "INSERT INTO client_preferences (client_id, preference) VALUES (?, ?)",
-      );
-      for (const p of data.preferences) stmt.run(data.id, p);
-    }
-    return { ok: true };
-  },
-);
-
-export const deleteClient = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: { id: string } }) => {
-    const db = getDb();
-    db.prepare("DELETE FROM clients WHERE id = ?").run(data.id);
-    return { ok: true };
-  },
-);
+export async function deleteClient({ data }: { data: { id: string } }): Promise<{ ok: true }> {
+  ensureSeeded();
+  store.clients.save(store.clients.list().filter((c) => c.id !== data.id));
+  // cascade: delete recommendations for this client
+  const { store: s } = await import("@/lib/storage");
+  s.recommendations.save(s.recommendations.list().filter((r) => r.client_id !== data.id));
+  return { ok: true };
+}

@@ -1,6 +1,4 @@
-"use server";
-import { createServerFn } from "@tanstack/react-start";
-import { getDb } from "@/lib/db";
+import { store, ensureSeeded } from "@/lib/storage";
 
 export type ProductRow = {
   id: string;
@@ -24,71 +22,76 @@ export type ProductInput = {
   vault_stock?: number;
 };
 
-export const listProducts = createServerFn({ method: "GET" }).handler(async () => {
-  const db = getDb();
-  return db.prepare("SELECT * FROM products ORDER BY name ASC").all() as ProductRow[];
-});
+export async function listProducts(): Promise<ProductRow[]> {
+  ensureSeeded();
+  return store.products.list().sort((a, b) => a.name.localeCompare(b.name));
+}
 
-export const getProduct = createServerFn({ method: "GET" }).handler(
-  async ({ data }: { data: { id: string } }) => {
-    const db = getDb();
-    return db.prepare("SELECT * FROM products WHERE id = ?").get(data.id) as
-      | ProductRow
-      | undefined;
-  },
-);
+export async function getProduct({
+  data,
+}: {
+  data: { id: string };
+}): Promise<ProductRow | undefined> {
+  ensureSeeded();
+  return store.products.get(data.id) ?? undefined;
+}
 
-export const createProduct = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: ProductInput }) => {
-    const db = getDb();
-    const id =
-      data.id ??
-      "P-" +
-        Math.random()
-          .toString(36)
-          .substring(2, 6)
-          .toUpperCase();
-    db.prepare(`
-      INSERT INTO products (id, sku, name, category, price, image, floor_stock, vault_stock)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      data.sku,
-      data.name,
-      data.category ?? "",
-      data.price ?? "",
-      data.image ?? "",
-      data.floor_stock ?? 0,
-      data.vault_stock ?? 0,
-    );
-    return { id };
-  },
-);
+export async function createProduct({
+  data,
+}: {
+  data: ProductInput;
+}): Promise<{ id: string }> {
+  ensureSeeded();
+  const id =
+    data.id ??
+    "P-" +
+      Math.random()
+        .toString(36)
+        .substring(2, 6)
+        .toUpperCase();
+  const newProduct: ProductRow = {
+    id,
+    sku: data.sku,
+    name: data.name,
+    category: data.category ?? "",
+    price: data.price ?? "",
+    image: data.image ?? "",
+    floor_stock: data.floor_stock ?? 0,
+    vault_stock: data.vault_stock ?? 0,
+  };
+  store.products.save([...store.products.list(), newProduct]);
+  return { id };
+}
 
-export const updateProduct = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: ProductInput & { id: string } }) => {
-    const db = getDb();
-    db.prepare(`
-      UPDATE products SET sku=?, name=?, category=?, price=?, image=?, floor_stock=?, vault_stock=?
-      WHERE id=?
-    `).run(
-      data.sku,
-      data.name,
-      data.category ?? "",
-      data.price ?? "",
-      data.image ?? "",
-      data.floor_stock ?? 0,
-      data.vault_stock ?? 0,
-      data.id,
-    );
-    return { ok: true };
-  },
-);
+export async function updateProduct({
+  data,
+}: {
+  data: ProductInput & { id: string };
+}): Promise<{ ok: true }> {
+  ensureSeeded();
+  const products = store.products.list();
+  const existing = products.find((p) => p.id === data.id);
+  if (!existing) throw new Error("Product not found");
+  const updated: ProductRow = {
+    ...existing,
+    sku: data.sku,
+    name: data.name,
+    category: data.category ?? existing.category,
+    price: data.price ?? existing.price,
+    image: data.image ?? existing.image,
+    floor_stock: data.floor_stock ?? existing.floor_stock,
+    vault_stock: data.vault_stock ?? existing.vault_stock,
+  };
+  store.products.save(products.map((p) => (p.id === data.id ? updated : p)));
+  return { ok: true };
+}
 
-export const deleteProduct = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: { id: string } }) => {
-    const db = getDb();
-    db.prepare("DELETE FROM products WHERE id = ?").run(data.id);
-    return { ok: true };
-  },
-);
+export async function deleteProduct({ data }: { data: { id: string } }): Promise<{ ok: true }> {
+  ensureSeeded();
+  store.products.save(store.products.list().filter((p) => p.id !== data.id));
+  // cascade: delete recommendations for this product
+  store.recommendations.save(
+    store.recommendations.list().filter((r) => r.product_id !== data.id),
+  );
+  return { ok: true };
+}

@@ -1,6 +1,4 @@
-"use server";
-import { createServerFn } from "@tanstack/react-start";
-import { getDb } from "@/lib/db";
+import { store, ensureSeeded } from "@/lib/storage";
 
 export type RecommendationRow = {
   id: number;
@@ -21,91 +19,72 @@ export type RecommendationInput = {
   signals?: string[];
 };
 
-function hydrate(row: Omit<RecommendationRow, "signals">): RecommendationRow {
-  const db = getDb();
-  const signals = (
-    db
-      .prepare(
-        "SELECT signal FROM recommendation_signals WHERE recommendation_id = ? ORDER BY id ASC",
-      )
-      .all(row.id) as { signal: string }[]
-  ).map((r) => r.signal);
-  return { ...row, signals };
+export async function listRecommendations(): Promise<RecommendationRow[]> {
+  ensureSeeded();
+  return store.recommendations.list().sort((a, b) => b.affinity - a.affinity);
 }
 
-export const listRecommendations = createServerFn({ method: "GET" }).handler(async () => {
-  const db = getDb();
-  const rows = db
-    .prepare("SELECT * FROM recommendations ORDER BY affinity DESC")
-    .all() as Omit<RecommendationRow, "signals">[];
-  return rows.map(hydrate);
-});
+export async function listRecommendationsForClient({
+  data,
+}: {
+  data: { clientId: string };
+}): Promise<RecommendationRow[]> {
+  ensureSeeded();
+  return store.recommendations
+    .list()
+    .filter((r) => r.client_id === data.clientId)
+    .sort((a, b) => b.affinity - a.affinity);
+}
 
-export const listRecommendationsForClient = createServerFn({ method: "GET" }).handler(
-  async ({ data }: { data: { clientId: string } }) => {
-    const db = getDb();
-    const rows = db
-      .prepare("SELECT * FROM recommendations WHERE client_id = ? ORDER BY affinity DESC")
-      .all(data.clientId) as Omit<RecommendationRow, "signals">[];
-    return rows.map(hydrate);
-  },
-);
+export async function createRecommendation({
+  data,
+}: {
+  data: RecommendationInput;
+}): Promise<{ id: number }> {
+  ensureSeeded();
+  const recs = store.recommendations.list();
+  const id = recs.length > 0 ? Math.max(...recs.map((r) => r.id)) + 1 : 1;
+  const newRec: RecommendationRow = {
+    id,
+    client_id: data.client_id,
+    product_id: data.product_id,
+    affinity: data.affinity,
+    reasoning: data.reasoning ?? "",
+    icebreaker: data.icebreaker ?? "",
+    signals: data.signals ?? [],
+  };
+  store.recommendations.save([...recs, newRec]);
+  return { id };
+}
 
-export const createRecommendation = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: RecommendationInput }) => {
-    const db = getDb();
-    const result = db
-      .prepare(`
-        INSERT INTO recommendations (client_id, product_id, affinity, reasoning, icebreaker)
-        VALUES (?, ?, ?, ?, ?)
-      `)
-      .run(
-        data.client_id,
-        data.product_id,
-        data.affinity,
-        data.reasoning ?? "",
-        data.icebreaker ?? "",
-      );
-    const id = result.lastInsertRowid as number;
-    if (data.signals?.length) {
-      const stmt = db.prepare(
-        "INSERT INTO recommendation_signals (recommendation_id, signal) VALUES (?, ?)",
-      );
-      for (const s of data.signals) stmt.run(id, s);
-    }
-    return { id };
-  },
-);
+export async function updateRecommendation({
+  data,
+}: {
+  data: RecommendationInput & { id: number };
+}): Promise<{ ok: true }> {
+  ensureSeeded();
+  const recs = store.recommendations.list();
+  const existing = recs.find((r) => r.id === data.id);
+  if (!existing) throw new Error("Recommendation not found");
+  const updated: RecommendationRow = {
+    ...existing,
+    client_id: data.client_id,
+    product_id: data.product_id,
+    affinity: data.affinity,
+    reasoning: data.reasoning ?? existing.reasoning,
+    icebreaker: data.icebreaker ?? existing.icebreaker,
+    signals: data.signals ?? existing.signals,
+  };
+  store.recommendations.save(recs.map((r) => (r.id === data.id ? updated : r)));
+  return { ok: true };
+}
 
-export const updateRecommendation = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: RecommendationInput & { id: number } }) => {
-    const db = getDb();
-    db.prepare(`
-      UPDATE recommendations SET client_id=?, product_id=?, affinity=?, reasoning=?, icebreaker=?
-      WHERE id=?
-    `).run(
-      data.client_id,
-      data.product_id,
-      data.affinity,
-      data.reasoning ?? "",
-      data.icebreaker ?? "",
-      data.id,
-    );
-    if (data.signals !== undefined) {
-      db.prepare("DELETE FROM recommendation_signals WHERE recommendation_id = ?").run(data.id);
-      const stmt = db.prepare(
-        "INSERT INTO recommendation_signals (recommendation_id, signal) VALUES (?, ?)",
-      );
-      for (const s of data.signals) stmt.run(data.id, s);
-    }
-    return { ok: true };
-  },
-);
-
-export const deleteRecommendation = createServerFn({ method: "POST" }).handler(
-  async ({ data }: { data: { id: number } }) => {
-    const db = getDb();
-    db.prepare("DELETE FROM recommendations WHERE id = ?").run(data.id);
-    return { ok: true };
-  },
-);
+export async function deleteRecommendation({
+  data,
+}: {
+  data: { id: number };
+}): Promise<{ ok: true }> {
+  ensureSeeded();
+  store.recommendations.save(store.recommendations.list().filter((r) => r.id !== data.id));
+  return { ok: true };
+}
