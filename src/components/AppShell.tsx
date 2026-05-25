@@ -5,6 +5,7 @@ import {
   Sparkles,
   SlidersHorizontal,
   BarChart3,
+  ShoppingBag,
   Lock,
   ChevronDown,
 } from "lucide-react";
@@ -30,6 +31,12 @@ const navItems: {
     to: "/personas",
     label: "Personas",
     icon: SlidersHorizontal,
+    required: "persona.view",
+  },
+  {
+    to: "/products",
+    label: "Products",
+    icon: ShoppingBag,
     required: "persona.view",
   },
   {

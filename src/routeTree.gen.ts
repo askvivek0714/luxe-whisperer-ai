@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecommendationsRouteImport } from './routes/recommendations'
+import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PersonasRouteImport } from './routes/personas'
 import { Route as ClientsRouteImport } from './routes/clients'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -19,6 +20,11 @@ import { Route as ClientsClientIdRouteImport } from './routes/clients.$clientId'
 const RecommendationsRoute = RecommendationsRouteImport.update({
   id: '/recommendations',
   path: '/recommendations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductsRoute = ProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonasRoute = PersonasRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/clients': typeof ClientsRouteWithChildren
   '/personas': typeof PersonasRoute
+  '/products': typeof ProductsRoute
   '/recommendations': typeof RecommendationsRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/clients': typeof ClientsRouteWithChildren
   '/personas': typeof PersonasRoute
+  '/products': typeof ProductsRoute
   '/recommendations': typeof RecommendationsRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/clients': typeof ClientsRouteWithChildren
   '/personas': typeof PersonasRoute
+  '/products': typeof ProductsRoute
   '/recommendations': typeof RecommendationsRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/clients'
     | '/personas'
+    | '/products'
     | '/recommendations'
     | '/clients/$clientId'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/clients'
     | '/personas'
+    | '/products'
     | '/recommendations'
     | '/clients/$clientId'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/clients'
     | '/personas'
+    | '/products'
     | '/recommendations'
     | '/clients/$clientId'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   ClientsRoute: typeof ClientsRouteWithChildren
   PersonasRoute: typeof PersonasRoute
+  ProductsRoute: typeof ProductsRoute
   RecommendationsRoute: typeof RecommendationsRoute
 }
 
@@ -114,6 +127,13 @@ declare module '@tanstack/react-router' {
       path: '/recommendations'
       fullPath: '/recommendations'
       preLoaderRoute: typeof RecommendationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/personas': {
@@ -170,8 +190,19 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   ClientsRoute: ClientsRouteWithChildren,
   PersonasRoute: PersonasRoute,
+  ProductsRoute: ProductsRoute,
   RecommendationsRoute: RecommendationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

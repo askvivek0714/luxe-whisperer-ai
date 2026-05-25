@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { clients } from "@/lib/clienteling-data";
+import { listClients } from "@/lib/fns/clients";
+import { resolvePortrait } from "@/lib/assets";
 import { ArrowUpRight, Circle } from "lucide-react";
 
 export const Route = createFileRoute("/")({
+  loader: () => listClients(),
   component: TodayPage,
   head: () => ({
     meta: [
@@ -16,14 +18,17 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const stats = [
-  { label: "Expected today", value: "14" },
-  { label: "Arrived", value: "1" },
-  { label: "Avg. basket forecast", value: "£4,820" },
-  { label: "AI briefs prepared", value: "14 / 14" },
-];
-
 function TodayPage() {
+  const clients = Route.useLoaderData();
+  const arrived = clients.filter((c) => c.status === "arrived").length;
+
+  const stats = [
+    { label: "Expected today", value: String(clients.length) },
+    { label: "Arrived", value: String(arrived) },
+    { label: "Avg. basket forecast", value: "£4,820" },
+    { label: "AI briefs prepared", value: `${clients.length} / ${clients.length}` },
+  ];
+
   return (
     <AppShell title="In-Store Management">
       <div className="px-8 py-10 max-w-6xl mx-auto animate-slide-up">
@@ -35,8 +40,11 @@ function TodayPage() {
             Good afternoon, <span className="italic">Julian</span>.
           </h2>
           <p className="text-muted-foreground mt-3 max-w-xl text-pretty">
-            Fourteen guests are anticipated at the Bond Street flagship today. Each brief has been
-            prepared with Claude-curated recommendations and brand-voice icebreakers.
+            {clients.length > 0
+              ? `${clients.length} guest${clients.length !== 1 ? "s" : ""} ${clients.length === 1 ? "is" : "are"} anticipated at the Bond Street flagship today.`
+              : "No guests scheduled today."}{" "}
+            Each brief has been prepared with Claude-curated recommendations and brand-voice
+            icebreakers.
           </p>
         </div>
 
@@ -62,51 +70,57 @@ function TodayPage() {
         </div>
 
         <div className="bg-card border border-border rounded-sm overflow-hidden">
-          {clients.map((c, i) => (
-            <Link
-              key={c.id}
-              to="/clients/$clientId"
-              params={{ clientId: c.id }}
-              className={`flex items-center gap-5 px-6 py-5 hover:bg-accent/40 transition-colors ${
-                i !== clients.length - 1 ? "border-b border-border" : ""
-              }`}
-            >
-              <span className="text-[10px] font-mono text-muted-foreground w-12">
-                {c.appointmentTime}
-              </span>
-              <img
-                src={c.portrait}
-                alt=""
-                className="size-12 rounded-full object-cover ring-1 ring-border"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="font-serif text-lg italic leading-tight">{c.name}</p>
-                <p className="text-[10px] uppercase tracking-wider text-primary font-mono mt-0.5">
-                  {c.persona}
-                </p>
-              </div>
-              <div className="hidden md:block text-right">
-                <p className="text-xs text-muted-foreground">Lifetime</p>
-                <p className="text-sm font-medium font-mono">{c.lifetimeValue}</p>
-              </div>
-              <span
-                className={`flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border ${
-                  c.status === "arrived"
-                    ? "border-primary/50 text-primary bg-primary/5"
-                    : "border-border text-muted-foreground"
+          {clients.length === 0 ? (
+            <p className="p-8 text-center text-muted-foreground italic">
+              No clients scheduled. Add clients to see them here.
+            </p>
+          ) : (
+            clients.map((c, i) => (
+              <Link
+                key={c.id}
+                to="/clients/$clientId"
+                params={{ clientId: c.id }}
+                className={`flex items-center gap-5 px-6 py-5 hover:bg-accent/40 transition-colors ${
+                  i !== clients.length - 1 ? "border-b border-border" : ""
                 }`}
               >
-                <Circle
-                  className={`size-1.5 ${
-                    c.status === "arrived"
-                      ? "fill-primary text-primary animate-pulse"
-                      : "fill-muted-foreground/30 text-muted-foreground/30"
-                  }`}
+                <span className="text-[10px] font-mono text-muted-foreground w-12">
+                  {c.appointment_time ?? "—"}
+                </span>
+                <img
+                  src={resolvePortrait(c.portrait)}
+                  alt=""
+                  className="size-12 rounded-full object-cover ring-1 ring-border"
                 />
-                {c.status === "arrived" ? "In Boutique" : "Expected"}
-              </span>
-            </Link>
-          ))}
+                <div className="flex-1 min-w-0">
+                  <p className="font-serif text-lg italic leading-tight">{c.name}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-primary font-mono mt-0.5">
+                    {c.persona}
+                  </p>
+                </div>
+                <div className="hidden md:block text-right">
+                  <p className="text-xs text-muted-foreground">Lifetime</p>
+                  <p className="text-sm font-medium font-mono">{c.lifetime_value}</p>
+                </div>
+                <span
+                  className={`flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border ${
+                    c.status === "arrived"
+                      ? "border-primary/50 text-primary bg-primary/5"
+                      : "border-border text-muted-foreground"
+                  }`}
+                >
+                  <Circle
+                    className={`size-1.5 ${
+                      c.status === "arrived"
+                        ? "fill-primary text-primary animate-pulse"
+                        : "fill-muted-foreground/30 text-muted-foreground/30"
+                    }`}
+                  />
+                  {c.status === "arrived" ? "In Boutique" : "Expected"}
+                </span>
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </AppShell>
