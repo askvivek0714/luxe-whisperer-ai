@@ -117,7 +117,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [role, setRole] = useState<Role>("associate");
+  const [role, setRole] = React.useState<Role>("associate");
 
   return (
     <QueryClientProvider client={queryClient}>
