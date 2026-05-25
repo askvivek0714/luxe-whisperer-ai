@@ -114,10 +114,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [role, setRole] = useState<Role>("associate");
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <RoleContext.Provider value={{ role, setRole }}>
+        <Outlet />
+      </RoleContext.Provider>
     </QueryClientProvider>
   );
 }
+
