@@ -8,7 +8,7 @@ const KEYS = {
   clients: "luxe:clients",
   products: "luxe:products",
   recommendations: "luxe:recommendations",
-  seeded: "luxe:seeded:v2",
+  seeded: "luxe:seeded:v3",
 };
 
 // ── Generic helpers ───────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ export const store = {
   },
 };
 
-// ── Seed data ─────────────────────────────────────────────────────────────────
+// ── Seed data (v3) ────────────────────────────────────────────────────────────
 
 export function ensureSeeded(): void {
   if (localStorage.getItem(KEYS.seeded)) return;
@@ -152,6 +152,46 @@ export function ensureSeeded(): void {
       floor_stock: 1,
       vault_stock: 3,
     },
+    {
+      id: "P-3341",
+      sku: "3341-MRN",
+      name: "Fine Merino Roll-Neck",
+      category: "Knitwear",
+      price: "£680",
+      image: "product-scarf",
+      floor_stock: 3,
+      vault_stock: 2,
+    },
+    {
+      id: "P-5502",
+      sku: "5502-TWL",
+      name: "Tailored Wool Trousers",
+      category: "Tailoring",
+      price: "£1,250",
+      image: "product-overcoat",
+      floor_stock: 2,
+      vault_stock: 1,
+    },
+    {
+      id: "P-1108",
+      sku: "1108-BLT",
+      name: "Petit Grain Leather Belt",
+      category: "Accessories",
+      price: "£320",
+      image: "product-loafer",
+      floor_stock: 6,
+      vault_stock: 4,
+    },
+    {
+      id: "P-6671",
+      sku: "6671-SLK",
+      name: "Silk Evening Chemise",
+      category: "Evening Wear",
+      price: "£1,800",
+      image: "product-tote",
+      floor_stock: 1,
+      vault_stock: 2,
+    },
   ];
 
   const clients: ClientRow[] = [
@@ -192,12 +232,7 @@ export function ensureSeeded(): void {
       shoe_size: "UK 9.5",
       preferences: ["Made-to-Measure", "Charcoal / Navy", "Brogue Detailing"],
       acquisitions: [
-        {
-          name: "Grained Calfskin Loafer",
-          season: "AW24",
-          price: "£1,100",
-          image: "product-loafer",
-        },
+        { name: "Grained Calfskin Loafer", season: "AW24", price: "£1,100", image: "product-loafer" },
       ],
     },
     {
@@ -217,6 +252,64 @@ export function ensureSeeded(): void {
       preferences: ["Architectural Silhouettes", "Monochrome", "Statement Outerwear"],
       acquisitions: [
         { name: "Hand-Rolled Silk Scarf", season: "AW24", price: "£420", image: "product-scarf" },
+      ],
+    },
+    {
+      id: "margaux-fontaine",
+      name: "Margaux Fontaine",
+      portrait: "client-aria",
+      persona: "Quiet Luxury Connoisseur",
+      persona_id: "quiet-luxury",
+      store: "Bond St. Flagship",
+      tier: "Private Client",
+      lifetime_value: "£38,400",
+      last_visit_days: 3,
+      appointment_time: "13:00",
+      status: "expected",
+      garment_size: "FR 38",
+      shoe_size: "EU 39",
+      preferences: ["Cashmere", "Ivory Palette", "Timeless Cuts"],
+      acquisitions: [
+        { name: "Fine Merino Roll-Neck", season: "AW24", price: "£680", image: "product-scarf" },
+      ],
+    },
+    {
+      id: "sebastian-cole",
+      name: "Sebastian Cole",
+      portrait: "client-julian",
+      persona: "Heritage Bespoke",
+      persona_id: "heritage",
+      store: "Bond St. Flagship",
+      tier: "VIC · Tier II",
+      lifetime_value: "£95,700",
+      last_visit_days: 11,
+      appointment_time: "17:00",
+      status: "expected",
+      garment_size: "UK 44R",
+      shoe_size: "UK 10",
+      preferences: ["Savile Row Heritage", "Navy / Charcoal", "Bespoke Shirting"],
+      acquisitions: [
+        { name: "Tailored Wool Trousers", season: "AW24", price: "£1,250", image: "product-overcoat" },
+        { name: "Petit Grain Leather Belt", season: "SS24", price: "£320", image: "product-loafer" },
+      ],
+    },
+    {
+      id: "yuki-tanaka",
+      name: "Yuki Tanaka",
+      portrait: "client-isabelle",
+      persona: "Editorial Modernist",
+      persona_id: "editorial",
+      store: "Bond St. Flagship",
+      tier: "Private Client",
+      lifetime_value: "£61,200",
+      last_visit_days: 19,
+      appointment_time: null,
+      status: "expected",
+      garment_size: "JP 7",
+      shoe_size: "EU 36",
+      preferences: ["Runway Pieces", "Monochrome", "Architectural"],
+      acquisitions: [
+        { name: "Silk Evening Chemise", season: "SS24", price: "£1,800", image: "product-tote" },
       ],
     },
     // ── Mayfair ───────────────────────────────────────────────────────────────
@@ -394,6 +487,72 @@ export function ensureSeeded(): void {
       icebreaker:
         "This silhouette photographs beautifully — I think it would carry well into your Paris trip next month.",
       signals: ["Persona match 88%"],
+    },
+    {
+      id: 6,
+      client_id: "margaux-fontaine",
+      product_id: "P-3341",
+      affinity: 91,
+      reasoning:
+        "The fine merino roll-neck aligns precisely with her preference for ivory palette and timeless knitwear with tactile quality.",
+      icebreaker:
+        "We have this in a very soft ivory — I think it would pair beautifully with what you acquired last season.",
+      signals: ["High Affinity", "Palette match", "Persona match 91%"],
+    },
+    {
+      id: 7,
+      client_id: "margaux-fontaine",
+      product_id: "P-4021",
+      affinity: 78,
+      reasoning:
+        "A clean, unbranded tote complements her preference for understated accessories without visible hardware.",
+      icebreaker:
+        "This tote has no external branding — structured enough for the office, relaxed enough for a weekend in the country.",
+      signals: ["Complementary", "No-logo preference"],
+    },
+    {
+      id: 8,
+      client_id: "sebastian-cole",
+      product_id: "P-5502",
+      affinity: 94,
+      reasoning:
+        "Tailored wool trousers directly match his Savile Row sensibility and three-season pattern of acquiring heritage tailoring pieces.",
+      icebreaker:
+        "These have just arrived from the atelier — the chalk stripe is subtle enough for daily wear but formal enough for the Garrick.",
+      signals: ["High Affinity", "Heritage match", "Repeat pattern"],
+    },
+    {
+      id: 9,
+      client_id: "sebastian-cole",
+      product_id: "P-1108",
+      affinity: 82,
+      reasoning:
+        "A well-finished leather belt to complete the tailored look. Pairs with his recent trouser acquisition.",
+      icebreaker:
+        "The stitching on this belt matches the thread used in the trouser waistband — they were designed as a pair.",
+      signals: ["Complementary", "Set completion"],
+    },
+    {
+      id: 10,
+      client_id: "yuki-tanaka",
+      product_id: "P-6671",
+      affinity: 89,
+      reasoning:
+        "The silk chemise is a runway-adjacent piece with architectural drape — precisely her brief for editorial dressing.",
+      icebreaker:
+        "This piece was worn in the Paris show — it photographs very differently depending on how it is draped.",
+      signals: ["Editorial match", "Persona match 89%", "Runway lineage"],
+    },
+    {
+      id: 11,
+      client_id: "yuki-tanaka",
+      product_id: "P-9912",
+      affinity: 76,
+      reasoning:
+        "The overcoat adds a structural silhouette layer to her evening wardrobe — consistent with her preference for monochrome statement pieces.",
+      icebreaker:
+        "Layered over the chemise, this creates the kind of contrast that reads very well on camera.",
+      signals: ["Layering potential", "Wardrobe gap"],
     },
   ];
 

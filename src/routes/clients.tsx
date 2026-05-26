@@ -1,7 +1,8 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ClientForm } from "@/components/forms/ClientForm";
 import { listClients } from "@/lib/fns/clients";
 import { resolvePortrait } from "@/lib/assets";
 import { useRole } from "@/lib/rbac";
@@ -22,18 +23,19 @@ export const Route = createFileRoute("/clients")({
 });
 
 function ClientsLayout() {
+  // All hooks must be called before any conditional return
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const allClients = Route.useLoaderData();
+  const { role } = useRole();
+  const [search, setSearch] = useState("");
+  const [selectedStore, setSelectedStore] = useState<string>("all");
+  const [showAddForm, setShowAddForm] = useState(false);
+
   const isDetail = pathname !== "/clients";
   if (isDetail) return <Outlet />;
 
-  const allClients = Route.useLoaderData();
-  const { role } = useRole();
   const isAssociate = role === "associate";
 
-  const [search, setSearch] = useState("");
-  const [selectedStore, setSelectedStore] = useState<string>("all");
-
-  // Associates always see only their store; marketing/admin can filter
   const storeFiltered = isAssociate
     ? allClients.filter((c) => (c.store ?? ASSOCIATE_STORE) === ASSOCIATE_STORE)
     : selectedStore === "all"
@@ -44,14 +46,13 @@ function ClientsLayout() {
     ? storeFiltered.filter(
         (c) =>
           c.name.toLowerCase().includes(search.toLowerCase()) ||
-          c.persona?.toLowerCase().includes(search.toLowerCase()) ||
-          c.tier?.toLowerCase().includes(search.toLowerCase()),
+          (c.persona ?? "").toLowerCase().includes(search.toLowerCase()) ||
+          (c.tier ?? "").toLowerCase().includes(search.toLowerCase()),
       )
     : storeFiltered;
 
   const isNewCustomer = search.trim().length > 0 && filtered.length === 0;
 
-  // Store counts for tabs (marketing/admin only)
   const storeCounts = STORES.reduce<Record<string, number>>((acc, s) => {
     acc[s] = allClients.filter((c) => (c.store ?? ASSOCIATE_STORE) === s).length;
     return acc;
@@ -61,7 +62,7 @@ function ClientsLayout() {
     ? storeFiltered.length
     : selectedStore === "all"
       ? allClients.length
-      : storeCounts[selectedStore] ?? 0;
+      : (storeCounts[selectedStore] ?? 0);
 
   return (
     <AppShell title="Customers">
@@ -78,6 +79,13 @@ function ClientsLayout() {
                 lifetime value.
               </p>
             </div>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex items-center gap-2 bg-foreground text-background text-[10px] uppercase tracking-widest font-semibold px-5 py-3 rounded-sm hover:bg-primary hover:text-primary-foreground transition-colors shrink-0"
+            >
+              <UserPlus className="size-3.5" strokeWidth={1.8} />
+              Add Customer
+            </button>
           </div>
 
           {/* Store tabs — marketing/admin only */}
@@ -110,12 +118,15 @@ function ClientsLayout() {
           )}
 
           <div className="relative max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" strokeWidth={1.5} />
+            <Search
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+              strokeWidth={1.5}
+            />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search customers by name, persona or tier…"
+              placeholder="Search by name, persona or tier…"
               className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
             />
           </div>
@@ -127,10 +138,17 @@ function ClientsLayout() {
               <Search className="size-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <h3 className="font-serif text-xl italic mb-2">No customer found</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
+            <p className="text-sm text-muted-foreground max-w-sm mb-6">
               "{search}" is not in the database. The AI recommendation engine only works with
-              existing customers — please add them via the admin panel first.
+              existing customers.
             </p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex items-center gap-2 bg-foreground text-background text-[10px] uppercase tracking-widest font-semibold px-5 py-3 rounded-sm hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              <UserPlus className="size-3.5" strokeWidth={1.8} />
+              Add as New Customer
+            </button>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
@@ -151,7 +169,7 @@ function ClientsLayout() {
                   <p className="text-[10px] uppercase tracking-widest text-primary font-mono mt-1">
                     {c.persona}
                   </p>
-                  <div className="flex gap-4 mt-4 text-[10px] font-mono text-muted-foreground">
+                  <div className="flex gap-4 mt-4 text-[10px] font-mono text-muted-foreground flex-wrap">
                     <span>{c.tier}</span>
                     <span>·</span>
                     <span>{c.lifetime_value}</span>
@@ -168,6 +186,8 @@ function ClientsLayout() {
           </div>
         )}
       </div>
+
+      {showAddForm && <ClientForm open={showAddForm} onClose={() => setShowAddForm(false)} />}
     </AppShell>
   );
 }

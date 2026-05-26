@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { clients } from "@/lib/clienteling-data";
 
 const DISMISSED_KEY = "arrivalAlert:dismissed";
+const SESSION_KEY = "arrivalAlert:shownSession";
 
 function getDismissedIds(): string[] {
   try {
@@ -22,15 +23,24 @@ function dismissId(id: string) {
 
 export function ArrivalAlert() {
   const client = clients.find((c) => c.status === "arrived");
+
   const alreadyDismissed = client ? getDismissedIds().includes(client.id) : true;
+  // Only show once per browser session, regardless of navigation
+  const alreadyShownThisSession = client
+    ? sessionStorage.getItem(SESSION_KEY) === client.id
+    : true;
 
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (alreadyDismissed) return;
-    const t = setTimeout(() => setVisible(true), 1200);
+    if (alreadyDismissed || alreadyShownThisSession || !client) return;
+    const t = setTimeout(() => {
+      setVisible(true);
+      sessionStorage.setItem(SESSION_KEY, client.id);
+    }, 1200);
     return () => clearTimeout(t);
-  }, [alreadyDismissed]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!client || !visible) return null;
 

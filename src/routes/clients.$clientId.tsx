@@ -8,6 +8,7 @@ import { listProducts } from "@/lib/fns/products";
 import { listPersonas } from "@/lib/fns/personas";
 import { resolvePortrait, resolveProductImage } from "@/lib/assets";
 import { ArrowLeft, Send, Sparkles, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/clients/$clientId")({
   component: ClientDetail,
@@ -43,6 +44,7 @@ function ClientDetail() {
     `Dear ${client.name.split(" ")[0]},\n\nIt was a pleasure welcoming you to the boutique. The pieces we discussed have been set aside under your name.\n\nWarmly,\nJulian`,
   );
   const [sent, setSent] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -155,6 +157,7 @@ function ClientDetail() {
                 </p>
                 <Link
                   to="/personas"
+                  search={{ highlight: persona.id }}
                   className="text-[10px] uppercase tracking-widest text-primary mt-3 inline-flex items-center gap-1"
                 >
                   Open in Studio <ChevronRight className="size-3" />
@@ -261,7 +264,7 @@ function ClientDetail() {
                   Channel: Encrypted concierge SMS · Send window T+24h
                 </p>
                 <button
-                  onClick={() => setSent(true)}
+                  onClick={() => !sent && setShowSendConfirm(true)}
                   disabled={sent}
                   className="inline-flex items-center gap-2 bg-foreground text-background text-[10px] uppercase tracking-widest font-semibold px-5 py-3 rounded-sm hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-60"
                 >
@@ -274,8 +277,40 @@ function ClientDetail() {
         </section>
       </div>
 
+      {showSendConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-sm p-8 max-w-sm w-full">
+            <h3 className="font-serif text-xl italic mb-2">
+              Send follow-up to {client.name.split(" ")[0]}?
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              This message will be queued via the concierge channel and delivered within 24 hours.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowSendConfirm(false)}
+                className="text-[10px] uppercase tracking-widest px-5 py-3 border border-border hover:bg-accent/60 rounded-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setSent(true);
+                  setShowSendConfirm(false);
+                  toast.success(`Message queued for ${client.name.split(" ")[0]} · T+24h`);
+                }}
+                className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest px-5 py-3 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-sm transition-colors"
+              >
+                <Send className="size-3" strokeWidth={1.8} />
+                Confirm Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showEdit && (
-        <ClientForm open={showEdit} onClose={() => setShowEdit(false)} client={client} />
+        <ClientForm open={showEdit} onClose={() => setShowEdit(false)} client={client} personas={personas} />
       )}
 
       {confirmDelete && (

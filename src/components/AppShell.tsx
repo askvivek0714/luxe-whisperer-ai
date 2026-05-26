@@ -13,6 +13,45 @@ import { ArrivalAlert } from "./ArrivalAlert";
 import { useRole, roleProfiles, can, type Permission, type Role } from "@/lib/rbac";
 import { useState } from "react";
 
+const BOND_ST_TEAM = [
+  { initials: "SB", name: "Sophie Bellamy", title: "Associate · Bond St." },
+  { initials: "MW", name: "Marcus Webb", title: "Associate · Bond St." },
+  { initials: "PN", name: "Priya Nair", title: "Senior Associate · Bond St." },
+];
+
+function TeamExpand() {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="mb-1">
+      <button
+        onClick={() => setExpanded((e) => !e)}
+        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent/60 transition-colors text-left"
+      >
+        <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground flex-1">
+          Bond St. Team · {BOND_ST_TEAM.length + 1} online
+        </span>
+        <ChevronDown className={`size-3 opacity-40 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+      {expanded && (
+        <div className="mt-1 space-y-0.5">
+          {BOND_ST_TEAM.map((m) => (
+            <div key={m.initials} className="flex items-center gap-2 px-2 py-1.5 rounded-sm">
+              <div className="size-6 rounded-full bg-muted text-foreground grid place-items-center text-[9px] font-mono shrink-0">
+                {m.initials}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium truncate">{m.name}</p>
+                <p className="text-[9px] text-muted-foreground truncate">{m.title}</p>
+              </div>
+              <span className="ml-auto size-1.5 rounded-full bg-green-500 shrink-0" />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const navItems: {
   to: string;
   label: string;
@@ -23,7 +62,7 @@ const navItems: {
   { to: "/clients", label: "Customers", icon: Users, required: "client.view" },
   {
     to: "/recommendations",
-    label: "Recommendations",
+    label: "AI Briefings",
     icon: Sparkles,
     required: "recommendation.view",
   },
@@ -103,6 +142,10 @@ export function AppShell({
           })}
         </div>
         <div className="p-4 border-t border-border relative">
+          {/* Bond St. team expand — associate only */}
+          {role === "associate" && (
+            <TeamExpand />
+          )}
           <button
             onClick={() => setOpen((o) => !o)}
             className="w-full flex items-center gap-3 p-2 rounded-sm hover:bg-accent/60 transition-colors text-left"

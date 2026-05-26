@@ -7,6 +7,9 @@ import { listPersonas, updatePersona, createPersona, deletePersona, type Persona
 import { useRole, can } from "@/lib/rbac";
 
 export const Route = createFileRoute("/personas")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    highlight: (search.highlight as string) || undefined,
+  }),
   loader: () => listPersonas(),
   component: PersonaStudio,
   head: () => ({
@@ -22,6 +25,7 @@ export const Route = createFileRoute("/personas")({
 
 function PersonaStudio() {
   const initialPersonas = Route.useLoaderData();
+  const { highlight } = Route.useSearch();
   const router = useRouter();
   const { role } = useRole();
   const canEdit = can(role, "persona.edit");
@@ -29,7 +33,7 @@ function PersonaStudio() {
   const canCreate = can(role, "persona.create");
 
   const [personas, setPersonas] = useState<PersonaRow[]>(initialPersonas);
-  const [activeId, setActiveId] = useState(personas[0]?.id ?? "");
+  const [activeId, setActiveId] = useState(highlight ?? personas[0]?.id ?? "");
   const [weights, setWeights] = useState<Record<string, PersonaRow["weights"]>>(
     Object.fromEntries(personas.map((p) => [p.id, p.weights])),
   );

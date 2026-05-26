@@ -21,21 +21,27 @@ import {
 import { createClient, updateClient, type ClientRow } from "@/lib/fns/clients";
 import { useRole } from "@/lib/rbac";
 import { STORES, ASSOCIATE_STORE } from "@/lib/stores";
+import { store, ensureSeeded } from "@/lib/storage";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   client?: ClientRow;
+  personas?: { id: string; name: string }[];
 };
 
 const TIERS = ["VIC · Tier I", "VIC · Tier II", "Private Client", "Client"];
 const STATUSES: ClientRow["status"][] = ["arrived", "expected", "browsing"];
 
-export function ClientForm({ open, onClose, client }: Props) {
+export function ClientForm({ open, onClose, client, personas: personasProp }: Props) {
   const router = useRouter();
   const { role } = useRole();
   const isEdit = !!client;
   const isAssociate = role === "associate";
+
+  // Load personas synchronously from storage (fallback if not passed as prop)
+  ensureSeeded();
+  const personas = personasProp ?? store.personas.list();
 
   const [name, setName] = useState(client?.name ?? "");
   const [tier, setTier] = useState(client?.tier ?? TIERS[1]);
@@ -65,6 +71,7 @@ export function ClientForm({ open, onClose, client }: Props) {
       .map((s) => s.trim())
       .filter(Boolean);
     try {
+      const selectedPersonaId = personas.find((p) => p.name === persona)?.id;
       if (isEdit) {
         await updateClient({
           data: {
@@ -74,6 +81,7 @@ export function ClientForm({ open, onClose, client }: Props) {
             store: isAssociate ? ASSOCIATE_STORE : clientStore,
             lifetime_value: lifetimeValue,
             persona,
+            persona_id: selectedPersonaId,
             status,
             appointment_time: appointmentTime || undefined,
             garment_size: garmentSize,
@@ -89,6 +97,7 @@ export function ClientForm({ open, onClose, client }: Props) {
             store: isAssociate ? ASSOCIATE_STORE : clientStore,
             lifetime_value: lifetimeValue,
             persona,
+            persona_id: selectedPersonaId,
             status,
             appointment_time: appointmentTime || undefined,
             garment_size: garmentSize,
@@ -198,7 +207,23 @@ export function ClientForm({ open, onClose, client }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>Persona</Label>
-              <Input value={persona} onChange={(e) => setPersona(e.target.value)} />
+              <Select
+                value={persona}
+                onValueChange={(v) => {
+                  setPersona(v);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a persona…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {personas.map((p) => (
+                    <SelectItem key={p.id} value={p.name}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Garment Size</Label>

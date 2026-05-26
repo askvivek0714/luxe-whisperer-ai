@@ -1,4 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+// Link still used for "All Customers" footer link
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { listClients } from "@/lib/fns/clients";
@@ -90,6 +91,7 @@ function TodayPage() {
   const allClients = Route.useLoaderData();
   const { role } = useRole();
   const navigate = useNavigate();
+  const router = useRouter();
 
   // Redirect marketing/admin away from Today
   useEffect(() => {
@@ -174,35 +176,36 @@ function TodayPage() {
             clients.map((c, i) => (
               <div
                 key={c.id}
-                className={`flex items-center gap-5 px-6 py-5 hover:bg-accent/40 transition-colors ${
+                onClick={() => router.navigate({ to: "/clients/$clientId", params: { clientId: c.id } })}
+                className={`flex items-center gap-5 px-6 py-5 hover:bg-accent/40 transition-colors cursor-pointer ${
                   i !== clients.length - 1 ? "border-b border-border" : ""
                 }`}
               >
-                <span className="text-[10px] font-mono text-muted-foreground w-12">
+                <span className="text-[10px] font-mono text-muted-foreground w-12 shrink-0">
                   {c.appointment_time ?? "—"}
                 </span>
-                <Link to="/clients/$clientId" params={{ clientId: c.id }} className="contents">
-                  <img
-                    src={resolvePortrait(c.portrait)}
-                    alt=""
-                    className="size-12 rounded-full object-cover ring-1 ring-border"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-serif text-lg italic leading-tight">{c.name}</p>
-                    <p className="text-[10px] uppercase tracking-wider text-primary font-mono mt-0.5">
-                      {c.persona}
-                    </p>
-                  </div>
-                  <div className="hidden md:block text-right">
-                    <p className="text-xs text-muted-foreground">Lifetime</p>
-                    <p className="text-sm font-medium font-mono">{c.lifetime_value}</p>
-                  </div>
-                </Link>
-                <StatusBadge
-                  clientId={c.id}
-                  statuses={statuses}
-                  onChange={handleStatusChange}
+                <img
+                  src={resolvePortrait(c.portrait)}
+                  alt=""
+                  className="size-12 rounded-full object-cover ring-1 ring-border shrink-0"
                 />
+                <div className="flex-1 min-w-0">
+                  <p className="font-serif text-lg italic leading-tight">{c.name}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-primary font-mono mt-0.5">
+                    {c.persona}
+                  </p>
+                </div>
+                <div className="hidden md:block text-right shrink-0">
+                  <p className="text-xs text-muted-foreground">Lifetime</p>
+                  <p className="text-sm font-medium font-mono">{c.lifetime_value}</p>
+                </div>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <StatusBadge
+                    clientId={c.id}
+                    statuses={statuses}
+                    onChange={handleStatusChange}
+                  />
+                </div>
               </div>
             ))
           )}
