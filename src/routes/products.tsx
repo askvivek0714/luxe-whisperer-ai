@@ -13,7 +13,7 @@ export const Route = createFileRoute("/products")({
   component: ProductsPage,
   head: () => ({
     meta: [
-      { title: "Products · Maison Vaurien" },
+      { title: "Products · ABL Clienteling" },
       { name: "description", content: "Product catalogue with stock levels and CRUD management." },
     ],
   }),

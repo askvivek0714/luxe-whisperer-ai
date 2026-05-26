@@ -7,7 +7,7 @@ export const Route = createFileRoute("/analytics")({
   component: AnalyticsPage,
   head: () => ({
     meta: [
-      { title: "Analytics · Maison Vaurien" },
+      { title: "Analytics · ABL Clienteling" },
       {
         name: "description",
         content: "Conversion, attach rate, and persona performance analytics.",

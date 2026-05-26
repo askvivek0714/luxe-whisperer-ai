@@ -14,7 +14,7 @@ export const Route = createFileRoute("/personas")({
   component: PersonaStudio,
   head: () => ({
     meta: [
-      { title: "Persona Studio · Maison Vaurien" },
+      { title: "Persona Studio · ABL Clienteling" },
       {
         name: "description",
         content: "Tune persona weights and brand-voice guardrails for Claude-powered recommendations.",

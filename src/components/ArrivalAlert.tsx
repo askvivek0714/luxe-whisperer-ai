@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { clients } from "@/lib/clienteling-data";
+import { Avatar } from "./Avatar";
 
 const DISMISSED_KEY = "arrivalAlert:dismissed";
 const SESSION_KEY = "arrivalAlert:shownSession";
@@ -54,11 +55,7 @@ export function ArrivalAlert() {
     <div className="absolute top-6 right-6 z-50 animate-slide-in-right">
       <Link to="/clients/$clientId" params={{ clientId: client.id }} className="block group">
         <div className="bg-foreground text-background p-5 rounded shadow-2xl ring-1 ring-white/10 flex items-center gap-5 min-w-[340px] hover:brightness-110 transition">
-          <img
-            src={client.portrait}
-            alt=""
-            className="size-12 rounded-full object-cover ring-1 ring-white/20"
-          />
+          <Avatar name={client.name} className="size-12 rounded-full text-xs shrink-0" />
           <div className="flex-1">
             <p className="text-[10px] uppercase tracking-widest opacity-60 mb-1">
               Arrival Detected

@@ -107,10 +107,15 @@ export function AppShell({
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <nav className="hidden md:flex w-64 flex-col border-r border-border bg-sidebar shrink-0">
         <div className="p-6 mb-4">
-          <div className="text-[10px] tracking-[0.3em] font-semibold uppercase opacity-40">
-            Maison Vaurien
+          <div className="flex items-center gap-2.5">
+            <div className="size-8 rounded bg-primary text-primary-foreground grid place-items-center text-[11px] font-bold tracking-tight shrink-0">
+              ABL
+            </div>
+            <div>
+              <div className="text-sm font-semibold leading-none">ABL Clienteling</div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">by Absolute Labs</div>
+            </div>
           </div>
-          <div className="font-serif italic text-lg mt-1">Clienteling</div>
         </div>
         <div className="flex-1 px-3 space-y-1">
           {visibleNav.map((item) => {
@@ -185,6 +190,14 @@ export function AppShell({
               ))}
             </div>
           )}
+          <a
+            href="https://absolutelabs.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center text-[9px] text-muted-foreground/50 hover:text-muted-foreground transition-colors mt-3 pb-1"
+          >
+            absolutelabs.co
+          </a>
         </div>
       </nav>
 

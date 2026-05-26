@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-r
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { listClients } from "@/lib/fns/clients";
-import { resolvePortrait } from "@/lib/assets";
+import { Avatar } from "@/components/Avatar";
 import { ArrowUpRight, Circle, ChevronDown } from "lucide-react";
 import { useRole } from "@/lib/rbac";
 import { ASSOCIATE_STORE } from "@/lib/stores";
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
   component: TodayPage,
   head: () => ({
     meta: [
-      { title: "Today · Maison Vaurien Clienteling" },
+      { title: "Today · ABL Clienteling" },
       {
         name: "description",
         content: "Today's expected guests, arrivals, and AI-prepared client briefs.",
@@ -184,11 +184,7 @@ function TodayPage() {
                 <span className="text-[10px] font-mono text-muted-foreground w-12 shrink-0">
                   {c.appointment_time ?? "—"}
                 </span>
-                <img
-                  src={resolvePortrait(c.portrait)}
-                  alt=""
-                  className="size-12 rounded-full object-cover ring-1 ring-border shrink-0"
-                />
+                <Avatar name={c.name} className="size-12 rounded-full text-xs shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-serif text-lg italic leading-tight">{c.name}</p>
                   <p className="text-[10px] uppercase tracking-wider text-primary font-mono mt-0.5">

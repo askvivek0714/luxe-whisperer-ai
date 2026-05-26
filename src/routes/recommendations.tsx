@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import { Trash2, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { RecommendationForm } from "@/components/forms/RecommendationForm";
 import { listRecommendations, deleteRecommendation } from "@/lib/fns/recommendations";
 import { listClients } from "@/lib/fns/clients";
 import { listProducts } from "@/lib/fns/products";
-import { resolvePortrait, resolveProductImage } from "@/lib/assets";
-import { useRole, can } from "@/lib/rbac";
+import { resolveProductImage } from "@/lib/assets";
+import { Avatar } from "@/components/Avatar";
 
 export const Route = createFileRoute("/recommendations")({
   loader: () => {
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/recommendations")({
   component: RecommendationsPage,
   head: () => ({
     meta: [
-      { title: "AI Briefings · Maison Vaurien" },
+      { title: "AI Briefings · ABL Clienteling" },
       {
         name: "description",
         content: "AI-curated product briefings prepared for today's expected customers.",
@@ -37,8 +37,6 @@ export const Route = createFileRoute("/recommendations")({
 function RecommendationsPage() {
   const { recs, clientMap, productMap, clients, products } = Route.useLoaderData();
   const router = useRouter();
-  const { role } = useRole();
-  const canCreate = can(role, "recommendation.view");
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -73,15 +71,6 @@ function RecommendationsPage() {
             <span className="text-[10px] font-mono text-muted-foreground uppercase">
               {recs.length} recommendation{recs.length !== 1 ? "s" : ""} across {byClient.length} customer{byClient.length !== 1 ? "s" : ""}
             </span>
-            {canCreate && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="inline-flex items-center gap-2 bg-foreground text-background text-[10px] uppercase tracking-widest font-semibold px-5 py-3 rounded-sm hover:bg-primary hover:text-primary-foreground transition-colors"
-              >
-                <Plus className="size-3" strokeWidth={2} />
-                New
-              </button>
-            )}
           </div>
         </div>
 
@@ -95,11 +84,7 @@ function RecommendationsPage() {
                 params={{ clientId: client.id }}
                 className="flex items-center gap-4 mb-4 group"
               >
-                <img
-                  src={resolvePortrait(client.portrait)}
-                  alt=""
-                  className="size-10 rounded-full object-cover ring-1 ring-border"
-                />
+                <Avatar name={client.name} className="size-10 rounded-full text-[10px]" />
                 <div>
                   <p className="font-serif italic text-lg leading-none group-hover:text-primary transition-colors">
                     {client.name}
@@ -160,14 +145,12 @@ function RecommendationsPage() {
                           </div>
                         )}
                       </div>
-                      {canCreate && (
-                        <button
-                          onClick={() => setDeletingId(id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0 self-center"
-                        >
-                          <Trash2 className="size-4" strokeWidth={1.5} />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setDeletingId(id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0 self-center"
+                      >
+                        <Trash2 className="size-4" strokeWidth={1.5} />
+                      </button>
                     </div>
                   );
                 })}

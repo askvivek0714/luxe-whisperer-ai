@@ -4,7 +4,7 @@ import { Search, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ClientForm } from "@/components/forms/ClientForm";
 import { listClients } from "@/lib/fns/clients";
-import { resolvePortrait } from "@/lib/assets";
+import { Avatar } from "@/components/Avatar";
 import { useRole } from "@/lib/rbac";
 import { STORES, ASSOCIATE_STORE } from "@/lib/stores";
 
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/clients")({
   component: ClientsLayout,
   head: () => ({
     meta: [
-      { title: "Customers · Maison Vaurien" },
+      { title: "Customers · ABL Clienteling" },
       {
         name: "description",
         content: "Full directory of boutique customers with persona and tier signals.",
@@ -159,11 +159,7 @@ function ClientsLayout() {
                 params={{ clientId: c.id }}
                 className="bg-card border border-border rounded-sm p-6 hover:shadow-lg transition-shadow flex gap-5"
               >
-                <img
-                  src={resolvePortrait(c.portrait)}
-                  alt=""
-                  className="size-16 rounded-sm object-cover ring-1 ring-border shrink-0"
-                />
+                <Avatar name={c.name} className="size-16 rounded-sm text-sm shrink-0" />
                 <div className="flex-1 min-w-0">
                   <h3 className="font-serif italic text-xl leading-tight">{c.name}</h3>
                   <p className="text-[10px] uppercase tracking-widest text-primary font-mono mt-1">

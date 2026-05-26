@@ -1,13 +1,13 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { ClientForm } from "@/components/forms/ClientForm";
-import { getClient, deleteClient } from "@/lib/fns/clients";
+import { Avatar } from "@/components/Avatar";
+import { getClient } from "@/lib/fns/clients";
 import { listRecommendationsForClient } from "@/lib/fns/recommendations";
 import { listProducts } from "@/lib/fns/products";
 import { listPersonas } from "@/lib/fns/personas";
-import { resolvePortrait, resolveProductImage } from "@/lib/assets";
-import { ArrowLeft, Send, Sparkles, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { resolveProductImage } from "@/lib/assets";
+import { ArrowLeft, Send, Sparkles, ChevronRight, ChevronDown, Circle, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clients/$clientId")({
@@ -35,25 +35,103 @@ export const Route = createFileRoute("/clients/$clientId")({
   },
 });
 
+// ── Visit status helpers (shared with Today page) ────────────────────────────
+
+type VisitStatus = "expected" | "in-store" | "completed";
+
+const STATUS_CYCLE: VisitStatus[] = ["expected", "in-store", "completed"];
+const STATUS_LABELS: Record<VisitStatus, string> = {
+  expected: "Expected",
+  "in-store": "In Store",
+  completed: "Completed",
+};
+const STATUS_STYLES: Record<VisitStatus, string> = {
+  expected: "border-border text-muted-foreground",
+  "in-store": "border-primary/50 text-primary bg-primary/5",
+  completed: "border-green-500/40 text-green-600 bg-green-500/5",
+};
+const DOT_STYLES: Record<VisitStatus, string> = {
+  expected: "fill-muted-foreground/30 text-muted-foreground/30",
+  "in-store": "fill-primary text-primary animate-pulse",
+  completed: "fill-green-500 text-green-500",
+};
+const ROSTER_KEY = "today:roster-status";
+
+function loadStatuses(): Record<string, VisitStatus> {
+  try { return JSON.parse(localStorage.getItem(ROSTER_KEY) ?? "{}"); } catch { return {}; }
+}
+
+// ── Visit notes helpers ───────────────────────────────────────────────────────
+
+function loadNoteText(clientId: string): string {
+  try { return JSON.parse(localStorage.getItem(`visit-notes:${clientId}`) ?? "{}").text ?? ""; } catch { return ""; }
+}
+function saveNoteText(clientId: string, text: string) {
+  localStorage.setItem(`visit-notes:${clientId}`, JSON.stringify({ text }));
+}
+
+// ── Page component ────────────────────────────────────────────────────────────
+
 function ClientDetail() {
   const { client, recs, productMap, personas } = Route.useLoaderData();
   const router = useRouter();
   const persona = personas.find((p) => p.id === client.persona_id);
+
+  // Visit status (synced with Today roster)
+  const [statuses, setStatuses] = useState<Record<string, VisitStatus>>(loadStatuses);
+  const clientStatus: VisitStatus = statuses[client.id] ?? "expected";
+
+  function handleStatusChange() {
+    const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(clientStatus) + 1) % STATUS_CYCLE.length];
+    const updated = { ...statuses, [client.id]: next };
+    setStatuses(updated);
+    localStorage.setItem(ROSTER_KEY, JSON.stringify(updated));
+  }
+
+  // Visit notes (shown when completed)
+  const [noteText, setNoteText] = useState(() => loadNoteText(client.id));
+  function handleNoteChange(text: string) {
+    setNoteText(text);
+    saveNoteText(client.id, text);
+  }
+
+  // Voice recording
+  const [recording, setRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setAudioUrl(URL.createObjectURL(blob));
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setRecording(true);
+    } catch {
+      toast.error("Microphone access denied");
+    }
+  }
+
+  function stopRecording() {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  }
 
   const [note, setNote] = useState(
     `Dear ${client.name.split(" ")[0]},\n\nIt was a pleasure welcoming you to the boutique. The pieces we discussed have been set aside under your name.\n\nWarmly,\nJulian`,
   );
   const [sent, setSent] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  async function handleDelete() {
-    await deleteClient({ data: { id: client.id } });
-    router.navigate({ to: "/clients" });
-  }
-
-  return (
+return (
     <AppShell title="Customer 360">
       <div className="flex h-full overflow-hidden">
         <aside className="w-80 border-r border-border bg-card overflow-y-auto p-8 animate-pulse-in shrink-0">
@@ -65,11 +143,7 @@ function ClientDetail() {
           </Link>
 
           <div className="mb-8 text-center">
-            <img
-              src={resolvePortrait(client.portrait)}
-              alt={client.name}
-              className="size-28 rounded-full mx-auto mb-4 object-cover ring-1 ring-border"
-            />
+            <Avatar name={client.name} className="size-28 rounded-full mx-auto mb-4 text-2xl" />
             <h2 className="font-serif text-2xl italic mb-1">{client.name}</h2>
             <p className="text-[10px] uppercase tracking-widest text-primary font-mono">
               {client.persona}
@@ -77,20 +151,20 @@ function ClientDetail() {
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono mt-1">
               {client.tier}
             </p>
-            <div className="flex justify-center gap-2 mt-4">
+
+            {/* Visit status badge */}
+            <div className="mt-4 flex justify-center">
               <button
-                onClick={() => setShowEdit(true)}
-                className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-sm"
+                onClick={handleStatusChange}
+                title={`Click to advance status`}
+                className={`flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors ${STATUS_STYLES[clientStatus]}`}
               >
-                <Pencil className="size-3" strokeWidth={1.5} /> Edit
-              </button>
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-destructive hover:text-destructive/80 border border-destructive/30 px-3 py-1.5 rounded-sm"
-              >
-                <Trash2 className="size-3" strokeWidth={1.5} /> Delete
+                <Circle className={`size-1.5 ${DOT_STYLES[clientStatus]}`} />
+                {STATUS_LABELS[clientStatus]}
+                <ChevronDown className="size-2.5 opacity-40" />
               </button>
             </div>
+
           </div>
 
           <div className="space-y-7">
@@ -247,6 +321,68 @@ function ClientDetail() {
               )}
             </div>
 
+            {/* Completed-visit notes — voice + text */}
+            {clientStatus === "completed" && (
+              <div className="pt-10 border-t border-border animate-slide-up">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="size-7 bg-green-500/10 text-green-600 rounded-full grid place-items-center">
+                    <Circle className="size-3 fill-green-500 text-green-500" />
+                  </div>
+                  <h3 className="text-sm font-medium">Visit Notes</h3>
+                  <span className="ml-auto text-[10px] font-mono uppercase tracking-widest text-green-600">
+                    Completed
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase font-mono mb-5">
+                  Record a voice note or add written observations for this visit
+                </p>
+
+                {/* Voice recording */}
+                <div className="mb-5 p-4 bg-card border border-border rounded-sm">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3">
+                    Voice Note
+                    {audioUrl && <span className="ml-2 text-green-600">· Recorded</span>}
+                    {!audioUrl && <span className="ml-2 opacity-60">· Not persisted across sessions</span>}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    {!recording ? (
+                      <button
+                        onClick={startRecording}
+                        className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold px-4 py-2.5 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-sm transition-colors"
+                      >
+                        <Mic className="size-3.5" strokeWidth={1.8} />
+                        {audioUrl ? "Re-record" : "Start Recording"}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={stopRecording}
+                        className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold px-4 py-2.5 bg-red-500 text-white hover:bg-red-600 rounded-sm transition-colors animate-pulse"
+                      >
+                        <Square className="size-3.5" strokeWidth={1.8} />
+                        Stop Recording
+                      </button>
+                    )}
+                    {audioUrl && !recording && (
+                      <audio src={audioUrl} controls className="h-8 flex-1" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Text notes */}
+                <textarea
+                  value={noteText}
+                  onChange={(e) => handleNoteChange(e.target.value)}
+                  placeholder="Add experience notes, customer observations, follow-up actions, items discussed…"
+                  className="w-full h-32 bg-card border border-border p-4 text-sm leading-relaxed rounded-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none placeholder:text-muted-foreground/50"
+                />
+                {noteText && (
+                  <p className="text-[9px] font-mono text-muted-foreground mt-1.5">
+                    Saved automatically
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="pt-10 border-t border-border animate-slide-up">
               <h3 className="text-xs uppercase tracking-widest font-semibold mb-2">
                 Post-Visit Follow-up
@@ -309,34 +445,6 @@ function ClientDetail() {
         </div>
       )}
 
-      {showEdit && (
-        <ClientForm open={showEdit} onClose={() => setShowEdit(false)} client={client} personas={personas} />
-      )}
-
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-sm p-8 max-w-sm w-full">
-            <h3 className="font-serif text-xl italic mb-2">Delete {client.name}?</h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              This will permanently remove the client profile and all associated recommendations.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="text-[10px] uppercase tracking-widest px-5 py-3 border border-border hover:bg-accent/60 rounded-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="text-[10px] uppercase tracking-widest px-5 py-3 bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-sm"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AppShell>
   );
 }
